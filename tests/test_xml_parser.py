@@ -1,13 +1,8 @@
-import pytest
 from pycalphad import Database, Model, calculate, variables as v
 from pycalphad.models.model_mqmqa import ModelMQMQA
 from pycalphad.tests.fixtures import select_database, load_database
 from pycalphad.tests.test_energy import check_energy
 
-@pytest.mark.xfail(reason="SymEngine is incorrect in equality comparison for expressions")
-# e.g. these are not equal:
-# this Piecewise((4.0*U1ALNI, And(T < 6000.0, 298.15 <= T)), (0, True))
-# other Piecewise((U1ALNI*4.0, And(T < 6000.0, 298.15 <= T)), (0, True))
 @select_database("alni_dupin_2001.tdb")
 def test_tdb_to_xml_roundtrip(load_database):
     """Test that a TDB can be round-tripped to/from XML and compare equal"""

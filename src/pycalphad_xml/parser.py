@@ -1,7 +1,7 @@
 from pycalphad.io.tdb import _sympify_string, _process_reference_state, to_interval
 from pycalphad import variables as v
 from pycalphad import __version__ as pycalphad_version
-from symengine import Piecewise, And, Symbol, S
+from symengine import Piecewise, And, Symbol, S, Float
 from lxml import etree, objectify
 import logging
 logger = logging.getLogger(__name__)
@@ -13,14 +13,23 @@ this_dir = Path(__file__).parent
 
 
 def convert_math_to_symbolic(math_nodes):
-    result = 0.0
+    result = S.Zero
     interval_nodes = [x for x in math_nodes if (not isinstance(x, str)) and x.tag == 'Interval']
     string_nodes = [x for x in math_nodes if isinstance(x, str)]
+    got_a_float = False
     for math_node in string_nodes:
-        # +0 is a hack, for how the function works
-        result += _sympify_string(math_node+'+0')
+        if math_node == '':
+            continue
+        sympified = _sympify_string(math_node)
+        if sympified.is_Float:
+            got_a_float = True
+        result += sympified
     result += convert_intervals_to_piecewise(interval_nodes)
     result = result.xreplace({Symbol('T'): v.T, Symbol('P'): v.P})
+    if got_a_float and result.is_Number:
+        # Workaround because Float(0.0) + 0 (or Float(0.0) + Float(0.0)) gives an S.Zero (drops the float.)
+        # If we got a float at any time, we want to preserve that for database equality checks
+        result = Float(result)
     return result
 
 
